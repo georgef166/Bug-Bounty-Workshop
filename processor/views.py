@@ -107,18 +107,21 @@ def preset_create_view(request):
     if request.method == "POST":
         form = PresetForm(request.POST)
         if form.is_valid():
-            preset = form.save(commit=False)
-            preset.user = request.user
-            preset.config = {
+            config = {
                 "dot_spacing": form.cleaned_data["dot_spacing"],
                 "style": form.cleaned_data["style"],
             }
             try:
-                validate_preset_config(preset.config)
+                validate_preset_config(config)
             except ValidationError as e:
                 form.add_error(None, e.message)
                 return render(request, "processor/preset_create.html", {"form": form})
-            preset.save()
+            Preset.objects.create(
+                user=request.user,
+                name=form.cleaned_data["name"],
+                config=config,
+                is_default=form.cleaned_data.get("is_default", False),
+            )
             return redirect("preset_list")
     else:
         form = PresetForm()
